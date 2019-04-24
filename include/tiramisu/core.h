@@ -1,6 +1,7 @@
 #ifndef _H_TIRAMISU_CORE_
 #define _H_TIRAMISU_CORE_
 #define AUTOMAT_MODE 1 // set to 1 if the automatic scheduling is allowed 
+#define ACCESS_TO_CSV_FILE 0 // set to 1 if the automatic scheduling is allowed 
 
 #include <isl/set.h>
 #include <isl/map.h>
@@ -5164,7 +5165,7 @@ class features_extractor{
   /** 
    * Recursive function to extract features of an instruction  (operation) 
    */
-    void re_expr_features_extractor(expr e, operation_features * op_features); 
+    void re_expr_features_extractor(expr e, operation_features * op_features, int &access_index); 
 
    /**
     *  Extract features of the list of itertors
@@ -5175,6 +5176,11 @@ class features_extractor{
    *  Extract features of a loop nest (the computation)
    */
    computation_features_struct computation_features_extractor(computation* comp);
+
+   /**
+    * Simplify the expression including Constant expressions.
+    */
+   expr simplify_estimation(tiramisu::expr e);
   
 
 private:
