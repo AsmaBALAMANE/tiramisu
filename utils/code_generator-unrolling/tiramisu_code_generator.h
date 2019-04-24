@@ -19,7 +19,7 @@
 #define MAX_COMP_DIM 4
 #define MAX_MEMORY_SIZE 27 //2²⁷
 #define MIN_LOOP_DIM 6      //2⁶
-#define MAX_UNROLL_FACTOR 128 // used to limit unroll factors in  exaustive exploration
+#define MAX_UNROLL_FACTOR 64 // used to limit unroll factors in  exaustive exploration
 
 #define INF (-100)
 
