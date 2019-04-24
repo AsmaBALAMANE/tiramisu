@@ -1327,7 +1327,7 @@ public:
 
         return *this;
     }
-
+   
     std::string to_str() const
     {
         std::string str = std::string("");
@@ -1812,10 +1812,27 @@ public:
      * \endcode
      *
      */
-     var(std::string name, expr lower_bound, expr upper_bound) : var(name, true)
+     var(std::string name, expr lower_bound, expr upper_bound) 
     {
-        lower = lower_bound;
-        upper = upper_bound;
+         assert(!name.empty());
+         auto declared = declared_vars.find(name);
+
+         if (declared != declared_vars.end())
+          {
+             *this = declared->second;
+          }
+         else
+         {
+             this->name = name;
+             this->etype = tiramisu::e_var;
+             this->dtype = global::get_loop_iterator_data_type();
+             this->defined = true;
+             this->lower = lower_bound;
+             this->upper = upper_bound;
+             var::declared_vars.insert(std::make_pair(name, *this));
+             DEBUG(3, std::cout << "Saved variable " << this->name << " of type " << str_from_tiramisu_type_primitive(this->dtype));
+         }
+      
     }
 
     /* Construct an expression that represents an untyped variable.
