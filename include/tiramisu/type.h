@@ -245,6 +245,7 @@ struct operation_features{
        std::vector<int>  hitograme_int_ops; // number of arithmetic (+  -  *  /   o_min  o_max )operations for int values 
        std::vector<int>  hitograme_double_ops; // number of arithmetic operations (+  -  *  /   o_min  o_max ) for double values  
         // TODO: other op types (o_sin;....) 
+      std::vector<std::vector<int>>  opeartion_access; // access info: (i1_span,i2_span,NULL,NULL,... max x times), (i3_span,i1_span,i2_span,NULL,NULL,...  max x times),.... ,NULL,NULL,NULL  max y times ( x=4, y=10)
     }; 
 struct local_schedule_features{ 
      std::vector<int> factors;
