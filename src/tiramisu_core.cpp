@@ -8457,14 +8457,21 @@ void tiramisu::computation::dump_computation_features_structure(){
      for(int j=0;j<nest_features.operations_features[i].hitograme_double_ops.size();j++){
      std::cout  <<  nest_features.operations_features[i].hitograme_double_ops[j]<< std::endl;
      }
-    std::cout << "--------------------"<< std::endl; 
-    std::cout  << "Operation Data type   "<< nest_features.operations_features[i].data_type<< std::endl;
+     std::cout << "--------------------"<< std::endl; 
+     std::cout  << "Operation Data type   "<< nest_features.operations_features[i].data_type<< std::endl;
      std::cout  << "Number of int loads  "<< nest_features.operations_features[i].histograme_loads[0]<< std::endl;
      std::cout  << "Number of int o_access operations  "<< nest_features.operations_features[i].histograme_loads[4]<< std::endl;
      std::cout  << "Number of floats loads  "<< nest_features.operations_features[i].histograme_loads[1]<< std::endl;
      std::cout  << "Number of float o_access operations  "<< nest_features.operations_features[i].histograme_loads[5]<< std::endl;
      std::cout  << "Number of int stores  "<< nest_features.operations_features[i].histograme_stores[0]<< std::endl;
-    std::cout  << "Number of float stores  "<< nest_features.operations_features[i].histograme_stores[1]<< std::endl;
+     std::cout  << "Number of float stores  "<< nest_features.operations_features[i].histograme_stores[1]<< std::endl;
+
+     std::cout << "-----Access features  ------"<< std::endl; 
+     for(int j=0;j<nest_features.operations_features[i].opeartion_access.size();j++){
+          for(int k=0;k<nest_features.operations_features[i].opeartion_access[j].size();k++){
+           std::cout  <<  nest_features.operations_features[i].opeartion_access[j][k] << std::endl;
+        }
+       }
      }
      std::cout << "--------schedule----------"<< std::endl; 
      std::map<std::string,std::vector<local_schedule_features>>::iterator it = nest_features.local_schedule.find("tile");
@@ -8523,13 +8530,16 @@ void tiramisu::computation::computation_features_to_csvfile(){
  * nb_add_int,nb_sub_int,nb_mul_int,nb_div_int,total_access_int,nb_access_int, 
  * or
  * nb_add_float,nb_sub_float,nb_mul_float,nb_div_float,total_access_float,nb_access_float,
- *  lower_bound,upper_bound,parallelized, (repeated  "max_iterators" times  )
+ * iterator_accessed,iterator_accessed,... (4 times),  iterator_accessed,iterator_accessed,...(10 times)
+ * Iterator_span,parallelized, (repeated  "max_iterators" times  )
  **/ 
  std::string line="";
  std::string delimiter = ",";
- std::string additive_iterators = "NULL,NULL,NULL,";
- std::string additive_iterators_last = "NULL,NULL,NULL";
- int max_iterators=10;
+ std::string null="NULL";
+ std::string additive_iterators = null+delimiter+null+delimiter;
+ std::string additive_iterators_last = null+delimiter+null;
+
+ int max_iterators=7;
  // configurating the features file creation 
  std::ofstream fcsv;
  std::string file_name;
@@ -8550,8 +8560,8 @@ void tiramisu::computation::computation_features_to_csvfile(){
  if (fcsv.is_open()){
  computation_features_struct nest_features= this->get_computation_features();
 // first colomn contains the real line column ( this is important for masking data while training)
-  int mask=12+ 3* nest_features.iterators.size();
-  line = line+std::to_string(mask)+delimiter;
+  //int mask=12+ 3* nest_features.iterators.size();
+  //line = line+std::to_string(mask)+delimiter;
   //--------Computation features----------" 
   // DataSet doesn't contain this case 
  // line = line+ std::to_string(nest_features.is_pedicate) +delimiter; 
@@ -8597,17 +8607,37 @@ void tiramisu::computation::computation_features_to_csvfile(){
        //Number of float o_access operations 
        line = line+ std::to_string(nest_features.operations_features[i].histograme_loads[5])+delimiter;
 
-       }   
+       } 
+        // Write access features if ACCESS_TO_CSV_FILE is set to 1 
+        if(ACCESS_TO_CSV_FILE){
+       for(int j=0;j<nest_features.operations_features[i].opeartion_access.size();j++){
+          for(int k=0;k<nest_features.operations_features[i].opeartion_access[j].size();k++){
+            if (nest_features.operations_features[i].opeartion_access[j][k]!=0){
+
+               line = line+ std::to_string(nest_features.operations_features[i].opeartion_access[j][k])+delimiter;
+
+            }else 
+             {
+                 line = line+ null +delimiter;
+             }
+          }
+        }
+
+      } 
        //Number of int stores ( one store in the case of one computation) 
       // line = line+ std::to_string(nest_features.operations_features[i].histograme_stores[0])+delimiter;
        //Number of float stores 
       // line = line+ std::to_string(nest_features.operations_features[i].histograme_stores[1])+delimiter;
      }
+    
+     
  //--------Itrerators----------" 
   for(int i=0; i<nest_features.iterators.size();i++){
   // line = line+ std::to_string(nest_features.iterators[i].it_level)+delimiter;
-   line = line+ std::to_string(nest_features.iterators[i].lower_bound)+delimiter;
-   line = line+ std::to_string(nest_features.iterators[i].upper_bound)+delimiter;
+  int it_span= nest_features.iterators[i].upper_bound - nest_features.iterators[i].lower_bound;
+   //line = line+ std::to_string(nest_features.iterators[i].lower_bound)+delimiter;
+   //line = line+ std::to_string(nest_features.iterators[i].upper_bound)+delimiter;
+   line = line+ std::to_string(it_span)+delimiter;
    line = line+ std::to_string(nest_features.iterators[i].parallelized)+delimiter;
   // line = line+ std::to_string(nest_features.iterators[i].vectorization_factor)+delimiter;
    /* TODO: verify the influence of factors dependencies in regression
@@ -8705,6 +8735,7 @@ computation_features_struct features_extractor::computation_features_extractor(c
      nest_features.coputation_name = comp->get_name();
      nest_features.loop_levels = comp->get_loop_levels_number();
      nest_features.iterators = features_extractor::iterator_features_extractor(comp->get_iterator_variables(),nest_features.nb_dependencies_intern);
+     
      nest_features.operations_features.push_back(features_extractor::operation_features_extractor(comp));
       if(comp->get_predicate().is_defined()){
         nest_features.is_pedicate=1;
@@ -8740,9 +8771,10 @@ nb_dependencies=0;
           list_features.lower_bound = cc->get_expr().get_int32_value();
          }       
           // TODO: bounds extimation 
-           // if (lower_expr.get_expr_type() == e_var || lower_expr.get_expr_type() == e_op){
-           // features_extractor::iterator_dependencies(lower_expr,list_vars,list_features.dependencies_lower,nb_dependencies);
-          
+            if (lower_expr.get_expr_type() == e_op){
+            //features_extractor::iterator_dependencies(lower_expr,list_vars,list_features.dependencies_lower,nb_dependencies);
+            list_features.lower_bound = simplify_estimation(lower_expr).get_int_val();
+            }
          } 
      if( upper_expr.get_expr_type() == e_val){
          list_features.upper_bound=upper_expr.get_int_val();
@@ -8753,10 +8785,10 @@ nb_dependencies=0;
          list_features.upper_bound = c->get_expr().get_int32_value();
          }
           // TODO: bounds extimation
-         //  if (upper_expr.get_expr_type() == e_var || upper_expr.get_expr_type() == e_op){
-        //  features_extractor::iterator_dependencies(upper_expr,list_vars,list_features.dependencies_upper,nb_dependencies);
-           //list_features.lower_bound=lower_expr.simplify().get_int_val();
-         // }
+           if (upper_expr.get_expr_type() == e_op){    
+          //features_extractor::iterator_dependencies(upper_expr,list_vars,list_features.dependencies_upper,nb_dependencies);  
+           list_features.upper_bound=simplify_estimation(upper_expr).get_int_val();
+          }
         } 
         
     lists_features.push_back(list_features); 
@@ -8768,7 +8800,8 @@ operation_features features_extractor::operation_features_extractor(computation*
     operation_features op_features;
     expr e = comp->get_expr();
     operation_features_initializer(&op_features); 
-    features_extractor::re_expr_features_extractor(e, &op_features); 
+    int access_index=-1;
+    features_extractor::re_expr_features_extractor(e, &op_features,access_index); 
      // initially (before scheduling) the operation is assigned to the innermost loop level
      op_features.op_loop_level=comp->get_loop_levels_number()-1;
     if(is_int(e.get_data_type())){
@@ -8785,10 +8818,10 @@ operation_features features_extractor::operation_features_extractor(computation*
   return op_features;
 }
 
- void features_extractor::re_expr_features_extractor(expr e, operation_features * op_features) 
+ void features_extractor::re_expr_features_extractor(expr e, operation_features * op_features, int &access_index) 
     {
         if (e.get_expr_type() != e_none)
-        {
+        {      
                 if (e.is_defined())
                 {  
                         
@@ -8802,7 +8835,7 @@ operation_features features_extractor::operation_features_extractor(computation*
                             
                            for (int i = 0; i < e.get_n_arg(); i++)
                             {
-                                features_extractor::re_expr_features_extractor(e.get_operand(i),op_features);
+                                features_extractor::re_expr_features_extractor(e.get_operand(i),op_features,access_index);
                             }   
                           if( is_int(e.get_data_type()) ){
                           // creat the histogram of operations 
@@ -8900,10 +8933,14 @@ operation_features features_extractor::operation_features_extractor(computation*
                               op_features->histograme_loads[3]=1;  // for float type access 
                               int upper=0; 
                               int lower=0;
+                              int it_index=0;
+                              access_index++;
                               for (const auto &ex : e.get_access())
                               {    // TODO: ex.get_expr_type() == e_op
+                                  //index for access vector 
+                                  
                                   if (ex.get_expr_type() == e_var) 
-                                 {      tiramisu::var iterator =  tiramisu::var::get_declared_vars().find(ex.get_name())->first;
+                                     {  tiramisu::var iterator =  tiramisu::var::get_declared_vars().find(ex.get_name())->first;
                                         if (iterator.is_defined()){
                                            if (iterator.get_upper().get_expr_type() == e_val){
                                               upper=iterator.get_upper().get_int_val();
@@ -8915,7 +8952,7 @@ operation_features features_extractor::operation_features_extractor(computation*
                                             }
                                             // TODO : special case when iterator bounds must be estimated 
                                            if (iterator.get_upper().get_expr_type() == e_op ){
-                                              upper=0;
+                                              upper=simplify_estimation(iterator.get_upper()).get_int_val();        
                                             }
                                            if (iterator.get_lower().get_expr_type() == e_val){
                                                lower =iterator.get_lower().get_int_val(); 
@@ -8923,24 +8960,26 @@ operation_features features_extractor::operation_features_extractor(computation*
                                            if (iterator.get_lower().get_expr_type() == e_var){
                                                 std::string constant_c = iterator.get_lower().get_name();
                                                 constant *cc = global::get_implicit_function()->get_invariant_by_name(constant_c);
-                                                lower = cc->get_expr().get_int32_value();
-                                              
+                                                lower = cc->get_expr().get_int32_value();     
                                            }
                                             // TODO : special case when iterator bounds must be estimated 
-                                            if (iterator.get_lower().get_expr_type() == e_var){
-                                               lower =0;
+                                            if (iterator.get_lower().get_expr_type() == e_op){
+                                               lower=simplify_estimation(iterator.get_lower()).get_int_val();
                                            }
 
-                                           int span= upper - lower; 
+                                           int span= upper - lower;   
+                                            op_features->opeartion_access[access_index][it_index]=span;
+                                            it_index++;
                                            if(is_int(e.get_data_type())){
                                              op_features->histograme_loads[2]=op_features->histograme_loads[2]*span;
-                                          } else if(is_float(e.get_data_type())){ 
+                                           } else if(is_float(e.get_data_type())){ 
                                             op_features->histograme_loads[3]=op_features->histograme_loads[3]*span;
                                            } 
                                      }
+                                     
                                   } 
                                   
-                                 features_extractor::re_expr_features_extractor(ex,op_features); 
+                                 features_extractor::re_expr_features_extractor(ex,op_features,access_index); 
                               }  
                                if(is_int(e.get_data_type())){
                                    // update number of int loads 
@@ -8963,7 +9002,7 @@ operation_features features_extractor::operation_features_extractor(computation*
                             op_features->nb_library_call= op_features->nb_library_call+1;    
                             for (const auto &ex : e.get_arguments())
                             {
-                                features_extractor::re_expr_features_extractor(ex,op_features);
+                                features_extractor::re_expr_features_extractor(ex,op_features,access_index);
                             }
                         }
                     break;   
@@ -8999,6 +9038,9 @@ operation_features features_extractor::operation_features_extractor(computation*
     op_features->hitograme_double_ops.insert(op_features->hitograme_double_ops.end(), { 0, 0,0, 0,0,0,0 });
     op_features->histograme_loads.insert(op_features->histograme_loads.end(), { 0, 0,0, 0,0,0 });
     op_features->histograme_stores.insert(op_features->histograme_stores.end(), { 0, 0,0, 0,0,0 });
+    std::vector <int> line(4, 0);
+    std::vector<std::vector<int> > v(10, line);
+    op_features->opeartion_access=v;
 }
 void features_extractor::iterator_features_initializer(iterator_features * it){
     std::vector<int> v(10,-1);
@@ -9034,5 +9076,54 @@ void features_extractor::iterator_features_initializer(iterator_features * it){
            }
        }
 
+    }
+     
+    expr features_extractor::simplify_estimation(tiramisu::expr e)
+    {
+        if (e.get_expr_type() != e_none)
+        {
+            switch (e.get_expr_type())
+            {
+                case tiramisu::e_op:
+                {
+                    switch (e.get_op_type())
+                    {
+                    case tiramisu::o_add:
+                        if ((simplify_estimation(e.get_operand(0)).get_expr_type() == tiramisu::e_val) && (simplify_estimation(e.get_operand(1)).get_expr_type() == tiramisu::e_val))
+                            if ((simplify_estimation(e.get_operand(0)).get_data_type() == tiramisu::p_int32))
+                                return expr(simplify_estimation(e.get_operand(0)).get_int_val() + simplify_estimation(e.get_operand(1)).get_int_val());
+                    case tiramisu::o_sub:
+                        if ((simplify_estimation(e.get_operand(0)).get_expr_type() == tiramisu::e_val) && (simplify_estimation(e.get_operand(1)).get_expr_type() == tiramisu::e_val))
+                            if ((simplify_estimation(e.get_operand(0)).get_data_type() == tiramisu::p_int32))
+                                return expr(simplify_estimation(e.get_operand(0)).get_int_val() - simplify_estimation(e.get_operand(1)).get_int_val());
+                    case tiramisu::o_mul:
+                        if ((simplify_estimation(e.get_operand(0)).get_expr_type() == tiramisu::e_val) && (simplify_estimation(e.get_operand(1)).get_expr_type() == tiramisu::e_val))
+                            if ((simplify_estimation(e.get_operand(0)).get_data_type() == tiramisu::p_int32))
+                                return expr(simplify_estimation(e.get_operand(0)).get_int_val() * simplify_estimation(e.get_operand(1)).get_int_val());
+                    case tiramisu::o_div:
+                        return e;
+                    default:
+                        ERROR("Simplifying an unsupported tiramisu expression.", 1);
+                    }
+                    break;
+                }
+                case (tiramisu::e_val):
+                {
+                    return e;
+                }
+                case (tiramisu::e_var):
+                {
+                std::string constant_name = e.get_name();
+                tiramisu::constant *c = global::get_implicit_function()->get_invariant_by_name(constant_name); 
+                expr ex(c->get_expr().get_int32_value());
+                 //this->int32_value = c->get_expr().get_int32_value();
+                    return ex;
+                }
+                default:
+                    ERROR("Expression type not supported.", true);
+            }
+        }
+
+        return e;
     }
 }    
