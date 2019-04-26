@@ -2,6 +2,7 @@
 #define _H_TIRAMISU_CORE_
 #define AUTOMAT_MODE 1 // set to 1 if the automatic scheduling is allowed 
 #define ACCESS_TO_CSV_FILE 0 // set to 1 if the automatic scheduling is allowed 
+#define ACCESS_ITERATORS_TO_CSV_FILE 1 // set to 1 if the automatic scheduling is allowed 
 
 #include <isl/set.h>
 #include <isl/map.h>
@@ -5167,6 +5168,12 @@ class features_extractor{
    */
     void re_expr_features_extractor(expr e, operation_features * op_features, int &access_index); 
 
+  /** 
+   * Recursive function to extract list of access operations 
+   */
+
+   void  access_list(expr e, computation_features_struct * comp_features, int &access_index); 
+
    /**
     *  Extract features of the list of itertors
     */
@@ -5181,6 +5188,12 @@ class features_extractor{
     * Simplify the expression including Constant expressions.
     */
    expr simplify_estimation(tiramisu::expr e);
+
+   /**
+    * Set for each iterators of the computation the data loaded before this iterator is incremented
+    */
+
+   void iterator_load_data(computation_features_struct * comp_features);
   
 
 private:
@@ -5198,6 +5211,11 @@ private:
    * initialize iterator_features structure
    */
    void iterator_features_initializer(iterator_features * it);
+   /**
+    * Get the iterator rank by name
+    */
+
+   int get_iterator_index_by_name(std::string name, std::vector<iterator_features> iterators);
 
    
 };
