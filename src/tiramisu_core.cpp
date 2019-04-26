@@ -8422,6 +8422,13 @@ void tiramisu::computation::dump_computation_features_structure(){
   std::cout << "Predicate before the computation  " <<  nest_features.is_pedicate << std::endl;
   std::cout << "Number of loop levels  " <<  nest_features.loop_levels << std::endl;
   std::cout << "Number of intern dependencies between loop levels  " <<  nest_features.nb_dependencies_intern << std::endl;
+
+  std::cout << "--------Itrerators Loads features----------"<< std::endl; 
+  for(int i=0; i<nest_features.loop_levels_initial;i++){
+   std::cout << i <<": " <<  nest_features.iterators_initial[i].it_data_loaded<< std::endl;
+    }
+   std::cout << "--------------------"<< std::endl; 
+
   std::cout << "--------Itrerators----------"<< std::endl; 
   for(int i=0; i<nest_features.iterators.size();i++){
     std::cout << "--------------------"<< std::endl; 
@@ -8538,8 +8545,9 @@ void tiramisu::computation::computation_features_to_csvfile(){
  std::string null="NULL";
  std::string additive_iterators = null+delimiter+null+delimiter;
  std::string additive_iterators_last = null+delimiter+null;
-
+ 
  int max_iterators=7;
+ int max_initial_iterators=4;
  // configurating the features file creation 
  std::ofstream fcsv;
  std::string file_name;
@@ -8568,6 +8576,17 @@ void tiramisu::computation::computation_features_to_csvfile(){
   line = line+std::to_string(nest_features.loop_levels)+delimiter;
   // DataSet doesn't contain this case 
  // line = line+std::to_string(nest_features.nb_dependencies_intern)+delimiter;
+
+   //iterators data loads
+   if(ACCESS_ITERATORS_TO_CSV_FILE){
+       for(int i=0; i<nest_features.iterators_initial.size();i++){
+
+          line = line+std::to_string(nest_features.iterators_initial[i].it_data_loaded)+delimiter;
+       }
+       for(int i=nest_features.iterators_initial.size();i<max_initial_iterators;i++){
+       line = line+null+delimiter;
+       }
+   }
   //-------operation----------
      for(int i=0; i<nest_features.operations_features.size();i++){
      // operation loop level is correlated with the loop_levels (operation loop level=loop_levels - 1)
@@ -8585,14 +8604,15 @@ void tiramisu::computation::computation_features_to_csvfile(){
        if(nest_features.operations_features[i].data_type==0 ){
 
       //-----int ops histogram------
-      for(int j=0;j<nest_features.operations_features[i].hitograme_int_ops.size()-3;j++){
-        // + - x : ( min max mod  are not used in in the data set) 
+      for(int j=0;j<nest_features.operations_features[i].hitograme_int_ops.size()-4;j++){
+        // + - x  ( : min max mod  are not used in in the data set) 
        line = line+ std::to_string(nest_features.operations_features[i].hitograme_int_ops[j])+delimiter;
        }
       //-----load and stors-----------
        // number of total int loads 
-      line = line+ std::to_string(nest_features.operations_features[i].histograme_loads[0])+delimiter;
-
+        if(ACCESS_ITERATORS_TO_CSV_FILE){
+         line = line+ std::to_string(nest_features.operations_features[i].histograme_loads[0])+delimiter;
+        }
        //int o_access operations 
        line = line+ std::to_string(nest_features.operations_features[i].histograme_loads[4])+delimiter;
 
@@ -8602,8 +8622,9 @@ void tiramisu::computation::computation_features_to_csvfile(){
        line = line+ std::to_string(nest_features.operations_features[i].hitograme_double_ops[j])+delimiter;
        }
         // total float loads
-       line = line+ std::to_string(nest_features.operations_features[i].histograme_loads[1])+delimiter;
-
+         if(ACCESS_ITERATORS_TO_CSV_FILE==0){
+          line = line+ std::to_string(nest_features.operations_features[i].histograme_loads[1])+delimiter;
+         }
        //Number of float o_access operations 
        line = line+ std::to_string(nest_features.operations_features[i].histograme_loads[5])+delimiter;
 
@@ -8734,14 +8755,19 @@ computation_features_struct features_extractor::computation_features_extractor(c
      computation_features_struct nest_features;
      nest_features.coputation_name = comp->get_name();
      nest_features.loop_levels = comp->get_loop_levels_number();
+     nest_features.loop_levels_initial=nest_features.loop_levels;
      nest_features.iterators = features_extractor::iterator_features_extractor(comp->get_iterator_variables(),nest_features.nb_dependencies_intern);
-     
      nest_features.operations_features.push_back(features_extractor::operation_features_extractor(comp));
+     int index_access=0;
+     access_list(comp->get_expr(),&nest_features, index_access); 
+     iterator_load_data(&nest_features);
+     nest_features.iterators_initial= nest_features.iterators;
       if(comp->get_predicate().is_defined()){
         nest_features.is_pedicate=1;
       }else{
         nest_features.is_pedicate= 0;
       } 
+      
      //nest_features.local_schedule = comp->get_computation_features().local_schedule;
      //nest_features.global_schedule = comp->get_computation_features().global_schedule;
     return nest_features;
@@ -9025,9 +9051,73 @@ operation_features features_extractor::operation_features_extractor(computation*
                 }
         }
     }
+void  features_extractor::access_list(expr e, computation_features_struct * comp_features, int &access_index) 
+    {
+        if (e.get_expr_type() != e_none)
+        {      
+           if (e.is_defined())
+            {  
+              switch (e.get_expr_type())
+                {
+                case tiramisu::e_op:
+                    {
+                         for (int i = 0; i < e.get_n_arg(); i++)
+                            {
+                                features_extractor::access_list(e.get_operand(i),comp_features,access_index);
+                            }   
+                         if ((e.get_op_type() == tiramisu::o_access))
+                        {   
+                              int it_index=0;
+                              std::vector<int> v;
+                              for (const auto &ex : e.get_access())
+                              {    
+                                   int rank= get_iterator_index_by_name(ex.get_name(), comp_features->iterators);
+                                    v.push_back(rank);
+                                    it_index++;
+                              }
+                              comp_features->operations_features[0].access_list.push_back(v); 
+                               access_index++;
+                             
 
+                        }
+
+                    
+                                 
+                   default: {} // other expression types are not used as operation features
+                                           
+                   }
+                }
+
+            }
+        }
+ }
+ void features_extractor::iterator_load_data(computation_features_struct * comp_features){
+     //for each iterator
+     for (int i=0;i<comp_features->iterators.size();i++){
+          int loads=0;
+         //TODO: change for multiple computation (or multiple operations)
+         //for each access 
+         for(int j=0; j<comp_features->operations_features[0].access_list.size();j++){
+            int acces_load=1;
+            int in=0;
+            //get all the iterators having level higher than i
+            for(int k=comp_features->iterators[i].it_level;k<comp_features->iterators.size();k++){
+                if( std::count(comp_features->operations_features[0].access_list[j].begin() ,comp_features->operations_features[0].access_list[j].end(),k)){
+                    in=1;
+                    acces_load= acces_load * (comp_features->iterators[k].upper_bound - comp_features->iterators[k].lower_bound);
+                }
+            }   
+            if( in == 1)  loads=loads+acces_load;        
+         }
+         comp_features->iterators[i].it_data_loaded=comp_features->iterators[i].it_data_loaded+loads;
+     }
+
+
+ }
    
  void features_extractor::operation_features_initializer(operation_features * op_features){
+     int nb_iterators_per_access=4;
+     int nb_max_access=10;
     op_features->op_loop_level=0;
     op_features->op_rank=1;
     op_features->nb_library_call=0;
@@ -9038,13 +9128,17 @@ operation_features features_extractor::operation_features_extractor(computation*
     op_features->hitograme_double_ops.insert(op_features->hitograme_double_ops.end(), { 0, 0,0, 0,0,0,0 });
     op_features->histograme_loads.insert(op_features->histograme_loads.end(), { 0, 0,0, 0,0,0 });
     op_features->histograme_stores.insert(op_features->histograme_stores.end(), { 0, 0,0, 0,0,0 });
-    std::vector <int> line(4, 0);
-    std::vector<std::vector<int> > v(10, line);
+    std::vector <int> line(nb_iterators_per_access, 0);
+    std::vector <int> line_(nb_iterators_per_access, -2); 
+    std::vector<std::vector<int> > v(nb_max_access, line);
+    std::vector<std::vector<int> > v_(nb_max_access, line);
     op_features->opeartion_access=v;
-}
+   // op_features->access_list=v_;
+ }
 void features_extractor::iterator_features_initializer(iterator_features * it){
     std::vector<int> v(10,-1);
     it->it_level=-1;
+    it->it_data_loaded=0;
     it->it_name="";
     it->lower_bound=-1;
     it->upper_bound=-1;
@@ -9076,6 +9170,14 @@ void features_extractor::iterator_features_initializer(iterator_features * it){
            }
        }
 
+    }
+     int features_extractor::get_iterator_index_by_name(std::string name,std::vector<iterator_features> iterators){
+        for (int i=0; i<iterators.size();i++){
+
+          if (iterators[i].it_name == name) 
+            return iterators[i].it_level;
+         }
+       
     }
      
     expr features_extractor::simplify_estimation(tiramisu::expr e)
