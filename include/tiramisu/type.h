@@ -231,6 +231,7 @@ struct iterator_features{ // loop iterator features
    int vectorization_factor; // the vectorization factor if this optimization is applied,  0 else
    std::vector<int> dependencies_lower; // list of iterators levels that this level (lewer bound) depends on
    std::vector<int> dependencies_upper; // list of iterators levels that this level (upper bound) depends on
+   int it_data_loaded; // define the size of  loaded data before the iterator is incremented
 };
 struct operation_features{  
        int op_loop_level; // the loop level where this operation is declared 
@@ -246,6 +247,7 @@ struct operation_features{
        std::vector<int>  hitograme_double_ops; // number of arithmetic operations (+  -  *  /   o_min  o_max ) for double values  
         // TODO: other op types (o_sin;....) 
       std::vector<std::vector<int>>  opeartion_access; // access info: (i1_span,i2_span,NULL,NULL,... max x times), (i3_span,i1_span,i2_span,NULL,NULL,...  max x times),.... ,NULL,NULL,NULL  max y times ( x=4, y=10)
+      std::vector<std::vector<int>>  access_list; //list of iterators for each access operation
     }; 
 struct local_schedule_features{ 
      std::vector<int> factors;
@@ -261,6 +263,8 @@ struct computation_features_struct{
     std::string coputation_name; 
     int loop_levels;  // Number of nest levels
     std::vector<iterator_features> iterators; // list des iterators 
+    int loop_levels_initial; //number of loop levels before scheduling 
+    std::vector<iterator_features> iterators_initial; // list des iterators before scheduling
     std::vector<operation_features> operations_features; // list of opererations features in the computation,  the index represent the loop level asigned to the operation
     int is_pedicate;  // set to 1 if a predicate statement is assigned to This computation (executed  only if this predicate is true) 
     int nb_dependencies_intern; // Number of dependencies between loops levels in the computation  
