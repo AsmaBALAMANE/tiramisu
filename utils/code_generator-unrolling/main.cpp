@@ -214,8 +214,8 @@ void read_inputs(int *nb_codes, int *nb_stages, string *default_type_tiramisu, s
         info = line.substr(pos1 + 1, pos2 - pos1 - 1);
         if (info.compare("all") == 0){
             for (int i = 1; i < MAX_UNROLL_FACTOR; ++i) {
-               (*unrolling_factors).push_back(i*2);
-                //(*unrolling_factors).push_back((int)pow(2.0, i));
+               //(*unrolling_factors).push_back(i*2);
+                (*unrolling_factors).push_back((int)pow(2.0, i));
             }
         }
         else {
