@@ -2,7 +2,7 @@
 #define _H_TIRAMISU_CORE_
 #define AUTOMAT_MODE 1 // set to 1 if the automatic scheduling is allowed 
 #define ACCESS_TO_CSV_FILE 0 // set to 1 if the automatic scheduling is allowed 
-#define ACCESS_ITERATORS_TO_CSV_FILE 1 // set to 1 if the automatic scheduling is allowed 
+#define ACCESS_ITERATORS_TO_CSV_FILE 1 // set to 1 if the total access is extracted per iterator 
 
 #include <isl/set.h>
 #include <isl/map.h>
@@ -3692,6 +3692,12 @@ public:
       */
      void update_interchange_features(int level1, int level2);
 
+      /**
+      *  update the access levels list of the computation features structure
+      */
+     void update_access_features(int level1, int level2);
+
+
      /**
       *  function to dump the features computation structure
       */
@@ -5211,13 +5217,22 @@ private:
    * initialize iterator_features structure
    */
    void iterator_features_initializer(iterator_features * it);
+
    /**
     * Get the iterator rank by name
     */
-
    int get_iterator_index_by_name(std::string name, std::vector<iterator_features> iterators);
 
-   
+  /**
+    * Get the tile factor applied on the level ( 0 else )
+    */
+   int get_tile_factor_by_level(int level,computation_features_struct * comp_features);
+
+    /**
+    * Get the iterator structure by iterator level
+    */
+
+  iterator_features get_iterator_by_level(int level,computation_features_struct * comp_features);
 };
 
 }
