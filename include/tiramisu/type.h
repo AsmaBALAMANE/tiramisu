@@ -232,6 +232,7 @@ struct iterator_features{ // loop iterator features
    std::vector<int> dependencies_lower; // list of iterators levels that this level (lewer bound) depends on
    std::vector<int> dependencies_upper; // list of iterators levels that this level (upper bound) depends on
    int it_data_loaded; // define the size of  loaded data before the iterator is incremented
+   int tile_factor; // the tile factor if the iterator level is tiled, 0 else;
 };
 struct operation_features{  
        int op_loop_level; // the loop level where this operation is declared 
@@ -265,6 +266,7 @@ struct computation_features_struct{
     std::vector<iterator_features> iterators; // list des iterators 
     int loop_levels_initial; //number of loop levels before scheduling 
     std::vector<iterator_features> iterators_initial; // list des iterators before scheduling
+    int loads_initial; // number of loads
     std::vector<operation_features> operations_features; // list of opererations features in the computation,  the index represent the loop level asigned to the operation
     int is_pedicate;  // set to 1 if a predicate statement is assigned to This computation (executed  only if this predicate is true) 
     int nb_dependencies_intern; // Number of dependencies between loops levels in the computation  
