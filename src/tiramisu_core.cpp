@@ -2947,7 +2947,7 @@ void computation::interchange(tiramisu::var L0_var, tiramisu::var L1_var)
     int L1 = dimensions[1];
 
     this->interchange(L0, L1);
-    std::cout << "Update access " << std::endl;
+    // update the access_list features 
     this->update_access_features(L0, L1);
 
     DEBUG_INDENT(-4);
@@ -9153,25 +9153,20 @@ void  features_extractor::access_list(expr e, computation_features_struct * comp
          for(int j=0; j<comp_features->operations_features[0].access_list.size();j++){
             int acces_load=1;
             int in=0;
-            std::cout  <<  "get all the iterators having level higher than"<< comp_features->iterators[i].it_level << std::endl ;
             //get all the iterators having level higher than i
             for(int k=comp_features->iterators[i].it_level;k<comp_features->iterators.size();k++){
                 if( std::count(comp_features->operations_features[0].access_list[j].begin() ,comp_features->operations_features[0].access_list[j].end(),k)){
                     in=1;
                     // get the iterator whose the level is k 
-                     std::cout  <<  "level -->"<< k << std::endl ;
-                       std::cout  <<  " acces_load_before"<< acces_load << std::endl ;
-                       std::cout  <<  " span"<< get_iterator_by_level(k,comp_features).upper_bound - get_iterator_by_level(k,comp_features).lower_bound << std::endl ;      
                     acces_load= acces_load * ( get_iterator_by_level(k,comp_features).upper_bound - get_iterator_by_level(k,comp_features).lower_bound);
-                    std::cout  <<  " acces_load_After"<< acces_load << std::endl ;
                 }
             }   
             if( in == 1)  loads=loads+acces_load;  
-            std::cout  <<  " loads=loads+acces_load"<< loads << std::endl ;      
+            
          }
          
          comp_features->iterators[i].it_data_loaded=comp_features->iterators[i].it_data_loaded+loads;
-           std::cout  <<  " comp_features->iterators[i].it_data_loaded for level"<< comp_features->iterators[i].it_level <<" is "  <<  comp_features->iterators[i].it_data_loaded << std::endl ; 
+          
      }
 
 
