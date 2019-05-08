@@ -2947,6 +2947,8 @@ void computation::interchange(tiramisu::var L0_var, tiramisu::var L1_var)
     int L1 = dimensions[1];
 
     this->interchange(L0, L1);
+    std::cout << "Update access " << std::endl;
+    this->update_access_features(L0, L1);
 
     DEBUG_INDENT(-4);
 }
@@ -6864,6 +6866,27 @@ void tiramisu::computation::update_schedule_features(std::string optimization, s
     comp_features.iterators[level1]=temp;
     this->set_computation_features(comp_features);
  }
+ void tiramisu::computation::update_access_features(int level1, int level2){
+     features_extractor fe; 
+     computation_features_struct comp_features = this->get_computation_features();
+     for(int i=0; i<comp_features.operations_features[0].access_list.size(); i++){
+         for(int j=0; j<comp_features.operations_features[0].access_list[i].size(); j++){
+              if( comp_features.operations_features[0].access_list[i][j]==level1){
+                 comp_features.operations_features[0].access_list[i][j]=level2;
+              }else{
+                if( comp_features.operations_features[0].access_list[i][j]==level2){
+                comp_features.operations_features[0].access_list[i][j]=level1;
+               }
+              }
+           }
+         }
+        
+         //update the load data per iterator
+        fe.iterator_load_data(&comp_features);
+        comp_features.iterators_initial= comp_features.iterators;
+        this->set_computation_features(comp_features);
+    }
+ 
  
  void tiramisu::computation::update_split_features(int level, int size){
     computation_features_struct comp_features = this->get_computation_features();
@@ -6908,7 +6931,7 @@ void tiramisu::computation::update_schedule_features(std::string optimization, s
  } 
   void tiramisu::computation::update_tile_features(int level1,int level2,int level3, std::string L0_outer_name, std::string L1_outer_name, std::string L2_outer_name,
                                                    std::string L0_inner_name, std::string L1_inner_name, std::string L2_inner_name){
-
+   
     computation_features_struct comp_features = this->get_computation_features();
     iterator_features L0_outer;
     iterator_features L1_outer;
@@ -8533,18 +8556,32 @@ void tiramisu::computation::dump_computation_features_structure(){
 
 void tiramisu::computation::computation_features_to_csvfile(){
 /**
- * mask,loop_levels,nb_operands,nb_var,nb_constant,data_type,
- * nb_add_int,nb_sub_int,nb_mul_int,nb_div_int,total_access_int,nb_access_int, 
- * or
- * nb_add_float,nb_sub_float,nb_mul_float,nb_div_float,total_access_float,nb_access_float,
+ * ------>loop structure and general info ----------->
+ * loop_levels,nb_operands,nb_var,nb_constant,data_type,
+ * 
+ *  ------>operations info  ( unit, total )-----------> (operations total =unit x total number of loads)
+ * nb_add_int, nb_add_int_total, nb_sub_int,nb_sub_int_total, nb_mul_int,nb_mul_int_total, nb_access_int, 
+ * or ( according to data type) 
+ * nb_add_float,nb_add_float_total, nb_sub_float,nb_sub_float_total, nb_mul_float,nb_mul_float_total, nb_access_float,
+ * 
+ * -----------------------------------Optional---------------------------------------
+ *  ----> optional: (access features) 
  * iterator_accessed,iterator_accessed,... (4 times),  iterator_accessed,iterator_accessed,...(10 times)
- * Iterator_span,parallelized, (repeated  "max_iterators" times  )
+ * ----------------------------------------------------------------------------------
+ * 
+ * ----> iterators access total (initial iterator before scheduling) for each iterator we count number of data loading when it changes 
+ * (it_data_loaded,tile_factor),(it_data_loaded,tile_factor),(it_data_loaded,tile_factor)...(repeted max_initial_iterators times) 
+ * 
+ * ----> iterators (after scheduling)
+ * Iterator_span, (repeated  "max_iterators" times  )
+ * 
  **/ 
  std::string line="";
  std::string delimiter = ",";
  std::string null="NULL";
- std::string additive_iterators = null+delimiter+null+delimiter;
- std::string additive_iterators_last = null+delimiter+null;
+ std::string additive_iterators = null+delimiter;
+ std::string additive_iterators_last = null;
+ features_extractor fe;
  
  int max_iterators=7;
  int max_initial_iterators=4;
@@ -8577,18 +8614,10 @@ void tiramisu::computation::computation_features_to_csvfile(){
   // DataSet doesn't contain this case 
  // line = line+std::to_string(nest_features.nb_dependencies_intern)+delimiter;
 
-   //iterators data loads
-   if(ACCESS_ITERATORS_TO_CSV_FILE){
-       for(int i=0; i<nest_features.iterators_initial.size();i++){
-
-          line = line+std::to_string(nest_features.iterators_initial[i].it_data_loaded)+delimiter;
-       }
-       for(int i=nest_features.iterators_initial.size();i<max_initial_iterators;i++){
-       line = line+null+delimiter;
-       }
-   }
+  
   //-------operation----------
      for(int i=0; i<nest_features.operations_features.size();i++){
+         int nb_loads=nest_features.loads_initial;
      // operation loop level is correlated with the loop_levels (operation loop level=loop_levels - 1)
      //  line = line+ std::to_string(nest_features.operations_features[i].op_loop_level)+delimiter;
        // TODO: op_rank will be use in multiple computations case 
@@ -8607,10 +8636,11 @@ void tiramisu::computation::computation_features_to_csvfile(){
       for(int j=0;j<nest_features.operations_features[i].hitograme_int_ops.size()-4;j++){
         // + - x  ( : min max mod  are not used in in the data set) 
        line = line+ std::to_string(nest_features.operations_features[i].hitograme_int_ops[j])+delimiter;
+       line = line+ std::to_string( nest_features.operations_features[i].hitograme_int_ops[j] * nb_loads)+delimiter;
        }
       //-----load and stors-----------
        // number of total int loads 
-        if(ACCESS_ITERATORS_TO_CSV_FILE){
+        if(ACCESS_ITERATORS_TO_CSV_FILE==0){
          line = line+ std::to_string(nest_features.operations_features[i].histograme_loads[0])+delimiter;
         }
        //int o_access operations 
@@ -8618,8 +8648,9 @@ void tiramisu::computation::computation_features_to_csvfile(){
 
        }else{
       //-----float ops histogram------
-       for(int j=0;j<nest_features.operations_features[i].hitograme_double_ops.size()-3;j++){
+       for(int j=0;j<nest_features.operations_features[i].hitograme_double_ops.size()-4;j++){
        line = line+ std::to_string(nest_features.operations_features[i].hitograme_double_ops[j])+delimiter;
+       line = line+ std::to_string(nest_features.operations_features[i].hitograme_double_ops[j] * nb_loads)+delimiter;
        }
         // total float loads
          if(ACCESS_ITERATORS_TO_CSV_FILE==0){
@@ -8645,11 +8676,27 @@ void tiramisu::computation::computation_features_to_csvfile(){
         }
 
       } 
+
        //Number of int stores ( one store in the case of one computation) 
       // line = line+ std::to_string(nest_features.operations_features[i].histograme_stores[0])+delimiter;
        //Number of float stores 
       // line = line+ std::to_string(nest_features.operations_features[i].histograme_stores[1])+delimiter;
      }
+      //iterators data loads
+   if(ACCESS_ITERATORS_TO_CSV_FILE){
+       for(int i=0; i<nest_features.iterators_initial.size();i++){
+          line = line+std::to_string(nest_features.iterators_initial[i].it_data_loaded)+delimiter;
+         /* if(fe.get_tile_factor_by_level(i,&nest_features)!=0){
+           line = line+std::to_string(fe.get_tile_factor_by_level(i,&nest_features))+delimiter;
+          } else{
+            line = line+null+delimiter;
+          }
+          */   
+       }
+       for(int i=nest_features.iterators_initial.size();i<max_initial_iterators;i++){
+       line = line+null+delimiter;
+       }
+   }
     
      
  //--------Itrerators----------" 
@@ -8659,7 +8706,7 @@ void tiramisu::computation::computation_features_to_csvfile(){
    //line = line+ std::to_string(nest_features.iterators[i].lower_bound)+delimiter;
    //line = line+ std::to_string(nest_features.iterators[i].upper_bound)+delimiter;
    line = line+ std::to_string(it_span)+delimiter;
-   line = line+ std::to_string(nest_features.iterators[i].parallelized)+delimiter;
+   //line = line+ std::to_string(nest_features.iterators[i].parallelized)+delimiter;
   // line = line+ std::to_string(nest_features.iterators[i].vectorization_factor)+delimiter;
    /* TODO: verify the influence of factors dependencies in regression
    //loop level dpendencies lower bound 
@@ -8685,7 +8732,7 @@ void tiramisu::computation::computation_features_to_csvfile(){
   }
    
      // -------schedule----------
-       /* 
+       /*
        // the iterators structure is updated after Tile application  
         std::map<std::string,std::vector<local_schedule_features>>::iterator it = nest_features.local_schedule.find("tile");
       if (it != nest_features.local_schedule.end()){
@@ -8699,6 +8746,7 @@ void tiramisu::computation::computation_features_to_csvfile(){
            line = line+ std::to_string(it->second[j].factors[i])+delimiter;
         } 
         }
+
      //The DataSet schedules for the moment doesn't contain any case of split optimization
           it = nest_features.local_schedule.find("split");
           if (it != nest_features.local_schedule.end()){
@@ -8761,7 +8809,11 @@ computation_features_struct features_extractor::computation_features_extractor(c
      int index_access=0;
      access_list(comp->get_expr(),&nest_features, index_access); 
      iterator_load_data(&nest_features);
+     nest_features.loads_initial=1; 
      nest_features.iterators_initial= nest_features.iterators;
+     for (int i=0;i<nest_features.iterators.size();i++){
+        nest_features.loads_initial= nest_features.loads_initial * (nest_features.iterators[i].upper_bound - nest_features.iterators[i].lower_bound);
+     }
       if(comp->get_predicate().is_defined()){
         nest_features.is_pedicate=1;
       }else{
@@ -9095,25 +9147,42 @@ void  features_extractor::access_list(expr e, computation_features_struct * comp
      //for each iterator
      for (int i=0;i<comp_features->iterators.size();i++){
           int loads=0;
+          comp_features->iterators[i].it_data_loaded=0;
          //TODO: change for multiple computation (or multiple operations)
          //for each access 
          for(int j=0; j<comp_features->operations_features[0].access_list.size();j++){
             int acces_load=1;
             int in=0;
+            std::cout  <<  "get all the iterators having level higher than"<< comp_features->iterators[i].it_level << std::endl ;
             //get all the iterators having level higher than i
             for(int k=comp_features->iterators[i].it_level;k<comp_features->iterators.size();k++){
                 if( std::count(comp_features->operations_features[0].access_list[j].begin() ,comp_features->operations_features[0].access_list[j].end(),k)){
                     in=1;
-                    acces_load= acces_load * (comp_features->iterators[k].upper_bound - comp_features->iterators[k].lower_bound);
+                    // get the iterator whose the level is k 
+                     std::cout  <<  "level -->"<< k << std::endl ;
+                       std::cout  <<  " acces_load_before"<< acces_load << std::endl ;
+                       std::cout  <<  " span"<< get_iterator_by_level(k,comp_features).upper_bound - get_iterator_by_level(k,comp_features).lower_bound << std::endl ;      
+                    acces_load= acces_load * ( get_iterator_by_level(k,comp_features).upper_bound - get_iterator_by_level(k,comp_features).lower_bound);
+                    std::cout  <<  " acces_load_After"<< acces_load << std::endl ;
                 }
             }   
-            if( in == 1)  loads=loads+acces_load;        
+            if( in == 1)  loads=loads+acces_load;  
+            std::cout  <<  " loads=loads+acces_load"<< loads << std::endl ;      
          }
+         
          comp_features->iterators[i].it_data_loaded=comp_features->iterators[i].it_data_loaded+loads;
+           std::cout  <<  " comp_features->iterators[i].it_data_loaded for level"<< comp_features->iterators[i].it_level <<" is "  <<  comp_features->iterators[i].it_data_loaded << std::endl ; 
      }
 
 
  }
+  iterator_features features_extractor::get_iterator_by_level(int level,computation_features_struct * comp_features){
+    for (int i=0;i<comp_features->iterators.size();i++){
+
+        if (comp_features->iterators[i].it_level==level)  return comp_features->iterators[i];
+    }
+
+  }
    
  void features_extractor::operation_features_initializer(operation_features * op_features){
      int nb_iterators_per_access=4;
@@ -9179,6 +9248,18 @@ void features_extractor::iterator_features_initializer(iterator_features * it){
          }
        
     }
+     int features_extractor::get_tile_factor_by_level(int level,computation_features_struct * comp_features){
+             std::map<std::string,std::vector<local_schedule_features>>::iterator it = comp_features->local_schedule.find("tile");
+     if (it != comp_features->local_schedule.end()){
+        for(int j=0; j< it->second.size();j++){
+            for(int i=0; i< it->second[j].levels.size();i++){
+                if (level==it->second[j].levels[i]) return it->second[j].factors[i];
+            }  
+         }
+         return 0; 
+       }
+       else return 0; 
+     }
      
     expr features_extractor::simplify_estimation(tiramisu::expr e)
     {
