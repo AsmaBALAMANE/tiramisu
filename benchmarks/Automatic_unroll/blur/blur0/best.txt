@@ -1,0 +1,10 @@
+Best Time: 0.000491 and best factor: 7
+Best Time: 21.4471 and best factor: 7
+Best Time: 17.3656 and best factor: 3
+Best Time: 9999999999 and best factor:
+Best Time: 9999999999 and best factor:
+Best Time: 9999999999 and best factor:
+Best Time: 0.200636 and best factor: 4
+Best Time: 0.000527 and best factor: 2
+Best Time: 0.000487 and best factor: 1
+Best Time: 0.000419 and best factor: 3

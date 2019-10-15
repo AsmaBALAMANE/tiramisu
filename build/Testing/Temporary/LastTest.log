@@ -1,0 +1,116 @@
+Start testing: Apr 09 00:16 CET
+----------------------------------------------------------
+3/246 Testing: 01_build
+3/246 Test: 01_build
+Command: "/usr/local/Cellar/cmake/3.13.3/bin/cmake" "--build" "/Users/mac/Desktop/PFE_Asma/tiramisu/build" "--target" "test_01"
+Directory: /Users/mac/Desktop/PFE_Asma/tiramisu/build
+"01_build" start time: Apr 09 00:16 CET
+Output:
+----------------------------------------------------------
+/usr/local/Cellar/cmake/3.13.3/bin/cmake -S/Users/mac/Desktop/PFE_Asma/tiramisu -B/Users/mac/Desktop/PFE_Asma/tiramisu/build --check-build-system CMakeFiles/Makefile.cmake 0
+/Library/Developer/CommandLineTools/usr/bin/make -f CMakeFiles/Makefile2 test_01
+/usr/local/Cellar/cmake/3.13.3/bin/cmake -S/Users/mac/Desktop/PFE_Asma/tiramisu -B/Users/mac/Desktop/PFE_Asma/tiramisu/build --check-build-system CMakeFiles/Makefile.cmake 0
+/usr/local/Cellar/cmake/3.13.3/bin/cmake -E cmake_progress_start /Users/mac/Desktop/PFE_Asma/tiramisu/build/CMakeFiles 2
+/Library/Developer/CommandLineTools/usr/bin/make -f CMakeFiles/Makefile2 CMakeFiles/test_01.dir/all
+/Library/Developer/CommandLineTools/usr/bin/make -f CMakeFiles/tiramisu.dir/build.make CMakeFiles/tiramisu.dir/depend
+cd /Users/mac/Desktop/PFE_Asma/tiramisu/build && /usr/local/Cellar/cmake/3.13.3/bin/cmake -E cmake_depends "Unix Makefiles" /Users/mac/Desktop/PFE_Asma/tiramisu /Users/mac/Desktop/PFE_Asma/tiramisu /Users/mac/Desktop/PFE_Asma/tiramisu/build /Users/mac/Desktop/PFE_Asma/tiramisu/build /Users/mac/Desktop/PFE_Asma/tiramisu/build/CMakeFiles/tiramisu.dir/DependInfo.cmake --color=
+/Library/Developer/CommandLineTools/usr/bin/make -f CMakeFiles/tiramisu.dir/build.make CMakeFiles/tiramisu.dir/build
+make[3]: Nothing to be done for `CMakeFiles/tiramisu.dir/build'.
+[100%] Built target tiramisu
+/Library/Developer/CommandLineTools/usr/bin/make -f CMakeFiles/test_01_fct_generator.dir/build.make CMakeFiles/test_01_fct_generator.dir/depend
+cd /Users/mac/Desktop/PFE_Asma/tiramisu/build && /usr/local/Cellar/cmake/3.13.3/bin/cmake -E cmake_depends "Unix Makefiles" /Users/mac/Desktop/PFE_Asma/tiramisu /Users/mac/Desktop/PFE_Asma/tiramisu /Users/mac/Desktop/PFE_Asma/tiramisu/build /Users/mac/Desktop/PFE_Asma/tiramisu/build /Users/mac/Desktop/PFE_Asma/tiramisu/build/CMakeFiles/test_01_fct_generator.dir/DependInfo.cmake --color=
+/Library/Developer/CommandLineTools/usr/bin/make -f CMakeFiles/test_01_fct_generator.dir/build.make CMakeFiles/test_01_fct_generator.dir/build
+make[3]: Nothing to be done for `CMakeFiles/test_01_fct_generator.dir/build'.
+[100%] Built target test_01_fct_generator
+/Library/Developer/CommandLineTools/usr/bin/make -f CMakeFiles/test_01.dir/build.make CMakeFiles/test_01.dir/depend
+[100%] Generating generated_fct_test_01.o
+cd /Users/mac/Desktop/PFE_Asma/tiramisu && /Users/mac/Desktop/PFE_Asma/tiramisu/build/test_01_fct_generator
+Saved variable root of type int32
+Saved variable t0 of type int32
+[constant function]
+|   Constructing a constant.
+|   [set_expression function]
+|   |   The original expression is: 10|   |   
+|   |   Traversing the expression to replace non-affine accesses by a constant definition.
+|   |   The new expression is: 10|   |   
+|   The constant is function wide, its name is : 
+|   N
+Saved variable i of type int32
+Saved variable j of type int32
+Saved variable i0 of type int32
+Saved variable j0 of type int32
+Saved variable i1 of type int32
+Saved variable j1 of type int32
+Saved variable t1 of type int32
+[computation function]
+|   [init_computation function]
+|   |   Constructing the computation: [N]->{S0[i,j]: 0<=i<N and 0<=j<N}
+|   |   [name_unnamed_iteration_domain_dimensions function]
+|   |   [add_computation function]
+|   |   [set_identity_schedule_based_on_iteration_domain function]
+|   |   |   [gen_identity_schedule_for_iteration_domain function]
+|   |   |   The following identity schedule is generated (setting schedule 0): 
+|   |   |   [N] -> { S0[i, j] -> S0[0, 0, i' = i, 0, j' = j, 0] : 0 <= i < N and 0 <= j < N }
+|   |   |   The identity schedule for the original computation is set.
+|   |   [set_expression function]
+|   |   |   The original expression is: (3 + 4)|   |   |   
+|   |   |   Traversing the expression to replace non-affine accesses by a constant definition.
+|   |   |   The new expression is: (3 + 4)|   |   |   
+|   |   [get_iteration_domain_dimension_names function]
+|   |   [set_schedule_domain_dim_names function]
+|   |   |   Setting the name of the domain of the schedule dimension 0 into t2
+|   |   |   The schedule after renaming:  [N] -> { S0[t2, j] -> S0[0, 0, i = t2, 0, j' = j, 0] : 0 <= t2 < N and 0 <= j < N }
+|   |   [set_schedule_domain_dim_names function]
+|   |   |   Setting the name of the domain of the schedule dimension 1 into t3
+|   |   |   The schedule after renaming:  [N] -> { S0[t2, t3] -> S0[0, 0, i = t2, 0, j = t3, 0] : 0 <= t2 < N and 0 <= t3 < N }
+|   |   [set_loop_level_names function]
+|   |   |   Setting the name of loop level 0 into i
+|   |   |   The schedule after renaming:  [N] -> { S0[t2, t3] -> S0[0, 0, i = t2, 0, j = t3, 0] : 0 <= t2 < N and 0 <= t3 < N }
+|   |   [set_loop_level_names function]
+|   |   |   Setting the name of loop level 1 into j
+|   |   |   The schedule after renaming:  [N] -> { S0[t2, t3] -> S0[0, 0, i = t2, 0, j = t3, 0] : 0 <= t2 < N and 0 <= t3 < N }
+[set_access function]
+|   Setting access {S0[i,j]->buf0[i,j]} for computation S0
+[tile function]
+|   [get_loop_level_names function]
+|   |   Collecting names of loop levels from the range of the schedule:  [N] -> { S0[t2, t3] -> S0[0, 0, i = t2, 0, j = t3, 0] : 0 <= t2 < N and 0 <= t3 < N }
+|   |   Names of loop levels: i j 
+|   [get_loop_level_numbers_from_dimension_names function]
+|   The loop level that corresponds to i is 0
+|   The loop level that corresponds to j is 1
+|   [tile function]
+test_01_fct_generator(14915,0x7fff91fc0380) malloc: *** mach_vm_map(size=1152921504606851072) failed (error code=3)
+*** error: can't allocate region
+*** set a breakpoint in malloc_error_break to debug
+libc++abi.dylib: terminating with uncaught exception of type std::bad_alloc: std::bad_alloc
+/bin/sh: line 1: 14915 Abort trap: 6           /Users/mac/Desktop/PFE_Asma/tiramisu/build/test_01_fct_generator
+make[3]: *** [generated_fct_test_01.o] Error 134
+make[2]: *** [CMakeFiles/test_01.dir/all] Error 2
+make[1]: *** [CMakeFiles/test_01.dir/rule] Error 2
+make: *** [test_01] Error 2
+<end of output>
+Test time =   0.55 sec
+----------------------------------------------------------
+Test Failed.
+"01_build" end time: Apr 09 00:16 CET
+"01_build" time elapsed: 00:00:00
+----------------------------------------------------------
+
+4/246 Testing: 01
+4/246 Test: 01
+Command: "/Users/mac/Desktop/PFE_Asma/tiramisu/build/test_01"
+Directory: /Users/mac/Desktop/PFE_Asma/tiramisu
+"01" start time: Apr 09 00:16 CET
+Output:
+----------------------------------------------------------
+Saved variable root of type int32
+[1;32mTest assign_7_to_10x10_2D_array_with_tiling_parallelism succeeded.[0m
+<end of output>
+Test time =   0.02 sec
+----------------------------------------------------------
+Test Passed.
+"01" end time: Apr 09 00:16 CET
+"01" time elapsed: 00:00:00
+----------------------------------------------------------
+
+End testing: Apr 09 00:16 CET

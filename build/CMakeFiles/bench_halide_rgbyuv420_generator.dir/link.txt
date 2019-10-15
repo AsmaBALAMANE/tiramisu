@@ -1,0 +1,1 @@
+g++  -std=c++11 -Wall -Wno-sign-compare -fno-rtti -DHALIDE_NO_JPEG -g -O0 -Wl,-search_paths_first -Wl,-headerpad_max_install_names  CMakeFiles/bench_halide_rgbyuv420_generator.dir/benchmarks/halide/rgbyuv420_ref.cpp.o  -o bench_halide_rgbyuv420_generator ../3rdParty/Halide/lib/libHalide.a -ldl -lpthread -lz -lm 

@@ -3,7 +3,8 @@
 #define AUTOMAT_MODE 1 // set to 1 if the automatic scheduling is allowed 
 #define ACCESS_TO_CSV_FILE 0 // set to 1 if the automatic scheduling is allowed 
 #define ACCESS_ITERATORS_TO_CSV_FILE 1 // set to 1 if the total access is extracted per iterator 
-
+#define IS_DATA_COLLECTION 0 // Set to 1 if the Features extraction is used for Creating Data_set
+#define CSV_FILE_PATH "../data.csv"
 #include <isl/set.h>
 #include <isl/map.h>
 #include <isl/union_map.h>
@@ -3628,6 +3629,12 @@ public:
        * Set the expression of the computation.
        */
      void set_expression(const tiramisu::expr &e);
+
+      /**
+       * Set the expression of the computation and extract it features
+       */
+
+     void set_expression(const tiramisu::expr &e, bool extract);
     /**
        * Set the features structure of the computation.
        */
@@ -5193,7 +5200,7 @@ class features_extractor{
    /**
     * Simplify the expression including Constant expressions.
     */
-   expr simplify_estimation(tiramisu::expr e);
+   expr simplify_estimation(tiramisu::expr e) const;
 
    /**
     * Set for each iterators of the computation the data loaded before this iterator is incremented

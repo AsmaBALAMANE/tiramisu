@@ -5936,9 +5936,11 @@ void tiramisu::computation::init_computation(std::string iteration_space_str,
     }
 
     this->updates.push_back(this);
-    // extract computation feature if the AUTOMAT_MODE is  true
-    if (AUTOMAT_MODE)
+    // extract computation feature if the AUTOMAT_MODE is  true and the expression is already set
+    if (AUTOMAT_MODE){ 
+    if( e.get_expr_type() != tiramisu::e_none)
     this->extract_computation_features();
+    }
     DEBUG_INDENT(-4);
 }
 
@@ -6695,7 +6697,8 @@ bool tiramisu::computation::has_accesses() const
  * Set the expression of the computation.
  */
 void tiramisu::computation::set_expression(const tiramisu::expr &e)
-{
+{ 
+     
     DEBUG_FCT_NAME(3);
     DEBUG_INDENT(4);
 
@@ -6711,6 +6714,31 @@ void tiramisu::computation::set_expression(const tiramisu::expr &e)
     this->expression = modified_e.copy();
 
     DEBUG_INDENT(-4);
+   
+    
+}
+void tiramisu::computation::set_expression(const tiramisu::expr &e, bool extract)
+{ 
+    if(extract && AUTOMAT_MODE && this->get_expr().get_expr_type() == tiramisu::e_none ){
+    DEBUG_FCT_NAME(3);
+    DEBUG_INDENT(4);
+
+    DEBUG_NO_NEWLINE(3, tiramisu::str_dump("The original expression is: "); e.dump(false));
+    DEBUG(3, tiramisu::str_dump(""));
+
+    DEBUG(3, tiramisu::str_dump("Traversing the expression to replace non-affine accesses by a constant definition."));
+    tiramisu::expr modified_e = traverse_expr_and_replace_non_affine_accesses(this, e);
+
+    DEBUG_NO_NEWLINE(3, tiramisu::str_dump("The new expression is: "); modified_e.dump(false););
+    DEBUG(3, tiramisu::str_dump(""));
+
+    this->expression = modified_e.copy();
+
+    DEBUG_INDENT(-4);
+     this->extract_computation_features();
+    }
+   
+    
 }
 
 void tiramisu::computation::set_inline(bool is_inline) {
@@ -8585,9 +8613,12 @@ void tiramisu::computation::computation_features_to_csvfile(){
  
  int max_iterators=7;
  int max_initial_iterators=4;
- // configurating the features file creation 
- std::ofstream fcsv;
+
  std::string file_name;
+ file_name= CSV_FILE_PATH;
+ std::ofstream fcsv;
+ if(IS_DATA_COLLECTION){ 
+ // configurating the features file creation 
  std::string file_name_csv="/data.csv";
  char cwd[1024];
  char cwd2[1024];
@@ -8601,6 +8632,7 @@ void tiramisu::computation::computation_features_to_csvfile(){
  file_name.append(cwd2);
  file_name.append(file_name_csv);
  //file creation
+ }
  fcsv.open(file_name, std::ios_base::app);
  if (fcsv.is_open()){
  computation_features_struct nest_features= this->get_computation_features();
@@ -8684,7 +8716,7 @@ void tiramisu::computation::computation_features_to_csvfile(){
      }
       //iterators data loads
    if(ACCESS_ITERATORS_TO_CSV_FILE){
-       for(int i=0; i<nest_features.iterators_initial.size();i++){
+       for(int i=0; i< std::min(nest_features.loop_levels_initial,max_initial_iterators) ;i++){
           line = line+std::to_string(nest_features.iterators_initial[i].it_data_loaded)+delimiter;
          /* if(fe.get_tile_factor_by_level(i,&nest_features)!=0){
            line = line+std::to_string(fe.get_tile_factor_by_level(i,&nest_features))+delimiter;
@@ -8705,7 +8737,13 @@ void tiramisu::computation::computation_features_to_csvfile(){
   int it_span= nest_features.iterators[i].upper_bound - nest_features.iterators[i].lower_bound;
    //line = line+ std::to_string(nest_features.iterators[i].lower_bound)+delimiter;
    //line = line+ std::to_string(nest_features.iterators[i].upper_bound)+delimiter;
-   line = line+ std::to_string(it_span)+delimiter;
+    if (i == max_iterators -1) {
+     line = line+ std::to_string(it_span);
+    }
+    else 
+     {
+         line = line+ std::to_string(it_span)+delimiter;
+     }    
    //line = line+ std::to_string(nest_features.iterators[i].parallelized)+delimiter;
   // line = line+ std::to_string(nest_features.iterators[i].vectorization_factor)+delimiter;
    /* TODO: verify the influence of factors dependencies in regression
@@ -9014,9 +9052,22 @@ operation_features features_extractor::operation_features_extractor(computation*
                               int it_index=0;
                               access_index++;
                               for (const auto &ex : e.get_access())
-                              {    // TODO: ex.get_expr_type() == e_op
-                                  //index for access vector 
-                                  
+                              {   
+                                  // bounds estimation case operation bounds  
+                                    /*       
+                                  if (ex.get_expr_type() == e_op){     
+                                          
+                                         if(is_int(e.get_data_type())){
+
+                                               op_features->histograme_loads[2]=op_features->histograme_loads[2]* simplify_estimation(ex).get_int_val();
+                                          } else{ 
+                                               
+                                               op_features->histograme_loads[3]=op_features->histograme_loads[3]* simplify_estimation(ex).get_int_val();
+                                           }  
+                                           
+                                    }
+                                    */
+                                   //index for access vector 
                                   if (ex.get_expr_type() == e_var) 
                                      {  tiramisu::var iterator =  tiramisu::var::get_declared_vars().find(ex.get_name())->first;
                                         if (iterator.is_defined()){
@@ -9123,17 +9174,29 @@ void  features_extractor::access_list(expr e, computation_features_struct * comp
                               std::vector<int> v;
                               for (const auto &ex : e.get_access())
                               {    
-                                   int rank= get_iterator_index_by_name(ex.get_name(), comp_features->iterators);
-                                    v.push_back(rank);
-                                    it_index++;
+                                  std::string it_name="";
+                                   if(ex.get_expr_type()== tiramisu::e_op){
+                                    // case when e_op expression (iterator operator val)
+                                     
+                                     for (int i = 0; i < ex.get_n_arg(); i++)
+                                      {
+                                         if(ex.get_operand(i).get_expr_type() == tiramisu::e_var)
+                                         it_name= ex.get_operand(i).get_name();
+                                         int rank= get_iterator_index_by_name(it_name,comp_features->iterators);
+                                         v.push_back(rank);
+                                         it_index++;
+                                      }           
+                                     }else{
+                                      it_name=ex.get_name();
+                                       int rank= get_iterator_index_by_name(it_name,comp_features->iterators);
+                                       v.push_back(rank);
+                                       it_index++;
+                                     }
+                                  
                               }
                               comp_features->operations_features[0].access_list.push_back(v); 
                                access_index++;
-                             
-
                         }
-
-                    
                                  
                    default: {} // other expression types are not used as operation features
                                            
@@ -9256,7 +9319,7 @@ void features_extractor::iterator_features_initializer(iterator_features * it){
        else return 0; 
      }
      
-    expr features_extractor::simplify_estimation(tiramisu::expr e)
+    expr features_extractor::simplify_estimation(tiramisu::expr e) const
     {
         if (e.get_expr_type() != e_none)
         {
@@ -9268,15 +9331,15 @@ void features_extractor::iterator_features_initializer(iterator_features * it){
                     {
                     case tiramisu::o_add:
                         if ((simplify_estimation(e.get_operand(0)).get_expr_type() == tiramisu::e_val) && (simplify_estimation(e.get_operand(1)).get_expr_type() == tiramisu::e_val))
-                            if ((simplify_estimation(e.get_operand(0)).get_data_type() == tiramisu::p_int32))
+                           // if ((simplify_estimation(e.get_operand(0)).get_data_type() == tiramisu::p_int32))
                                 return expr(simplify_estimation(e.get_operand(0)).get_int_val() + simplify_estimation(e.get_operand(1)).get_int_val());
                     case tiramisu::o_sub:
                         if ((simplify_estimation(e.get_operand(0)).get_expr_type() == tiramisu::e_val) && (simplify_estimation(e.get_operand(1)).get_expr_type() == tiramisu::e_val))
-                            if ((simplify_estimation(e.get_operand(0)).get_data_type() == tiramisu::p_int32))
+                           //if ((simplify_estimation(e.get_operand(0)).get_data_type() == tiramisu::p_int32))
                                 return expr(simplify_estimation(e.get_operand(0)).get_int_val() - simplify_estimation(e.get_operand(1)).get_int_val());
                     case tiramisu::o_mul:
                         if ((simplify_estimation(e.get_operand(0)).get_expr_type() == tiramisu::e_val) && (simplify_estimation(e.get_operand(1)).get_expr_type() == tiramisu::e_val))
-                            if ((simplify_estimation(e.get_operand(0)).get_data_type() == tiramisu::p_int32))
+                           // if ((simplify_estimation(e.get_operand(0)).get_data_type() == tiramisu::p_int32))
                                 return expr(simplify_estimation(e.get_operand(0)).get_int_val() * simplify_estimation(e.get_operand(1)).get_int_val());
                     case tiramisu::o_div:
                         return e;
@@ -9293,10 +9356,33 @@ void features_extractor::iterator_features_initializer(iterator_features * it){
                 {
                 std::string constant_name = e.get_name();
                 tiramisu::constant *c = global::get_implicit_function()->get_invariant_by_name(constant_name); 
-                expr ex(c->get_expr().get_int32_value());
-                 //this->int32_value = c->get_expr().get_int32_value();
-                    return ex;
+                if (c != NULL){ // e is a constant
+                     expr ex(c->get_expr().get_int_val());
+                     return ex;
+                 }
+                 else{ // e is variable 
+                 /*
+                     std::string st="EXPER--> "+ std::to_string(e.get_expr_type());
+                     ERROR(st, true);
+                     tiramisu::var v =  tiramisu::var::get_declared_vars().find(constant_name)->first;
+                    
+                      std::string name_c1 = v.get_upper().get_name();
+                       std::cout << "Valllllll1----->" <<  v.get_upper().get_name() << std::endl;
+                      tiramisu::constant *c1 = global::get_implicit_function()->get_invariant_by_name(name_c1); 
+                      // std::cout << "Valllllll1----->" <<  c1->get_expr().get_expr_type() << std::endl;
+                      int val= c1->get_expr().get_int32_value();
+                       st= std::to_string(val);
+                   
+                       expr ex2(val);
+                       return ex2;
+                      // return( expr( simplify_estimation(v.get_upper()).get_int_val() - simplify_estimation(v.get_lower()).get_int_val()));   
+                      */
+                      return e;      
+                 }
+                 
+               
                 }
+
                 default:
                     ERROR("Expression type not supported.", true);
             }

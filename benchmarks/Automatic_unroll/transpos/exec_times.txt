@@ -1,0 +1,13 @@
+9.3e-05
+6.6e-05
+0.0402155
+0.000128
+0.040197
+0.0683865
+0.083611
+
+Image in(UInt(8), 2);
+Var x, y;
+Func blurx, out;
+blurx(x,y) = (in(x-1,y) + in(x,y) + in(x+1,y)) / 3;
+out(x,y) = (blurx(x,y-1) + blurx(x,y) + blurx(x,y+1)) / 3;

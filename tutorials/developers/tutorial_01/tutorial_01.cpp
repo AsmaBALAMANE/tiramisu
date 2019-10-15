@@ -50,11 +50,12 @@ int main(int argc, char **argv)
     // Declare an iterator. The range of this iterator is [0, 10[
     // i.e., 0<=i<10
     var i("i", 0, 10);
-
+    constant c("c", 3);
     // Declare a computation that adds 3 and 4.  This computation is done
     // within a loop that has i as iterator and is named "S0". The name is
     // useful for debugging.
-    computation S0("S0", {i}, 3 + 4);
+    computation comp0("comp0", {i}, c + 4 );
+    comp0.dump_computation_features_structure();
     // Since the iterator i is declared to be 0<=i<10 (i.e., the iteration space of S0 is 0<=i<10),
     // the previous declaration of S0 is equivalent to the following C code
     // for (i = 0; i < 10; i++)
@@ -66,7 +67,7 @@ int main(int argc, char **argv)
     // ------------------------------------------------------------
 
     // Parallelize the loop level i
-    S0.parallelize(i);
+    comp0.parallelize(i);
 
     // -------------------------------------------------------
     // Layer III: allocate buffers and specify how computations
@@ -91,7 +92,7 @@ int main(int argc, char **argv)
 
     // Store the computation S0 to the buffer buf0.
     // That is, store the computation S0(i) in buf0[i].
-    S0.store_in(&buf0);
+    comp0.store_in(&buf0);
 
     // -------------------------------------------------------
     // Code Generation

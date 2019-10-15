@@ -9,7 +9,7 @@ int main(int, char **)
     int N = 10;
 
     Halide::Buffer<int32_t> output(N);
-    init_buffer(output, (int32_t)9);
+    init_buffer(output, (int32_t)4);
 
     std::cout << "Array (after initialization)" << std::endl;
     print_buffer(output);
